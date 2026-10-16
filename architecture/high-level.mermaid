@@ -1,0 +1,42 @@
+graph TB
+    subgraph Clients["Browser — single HTML file, no build step"]
+        SESSION["Session Tab<br/>(all users)"]
+        TRACKER["Tracker<br/>(admin)"]
+        BOARD["Leaderboard<br/>(admin)"]
+        CONTROL["Station Control<br/>(admin)"]
+        CONFIG["Rubric Config<br/>(admin)"]
+    end
+
+    subgraph Server["Single Node Service"]
+        AUTHMW["Auth Middleware<br/>(signed cookie)"]
+        ROLE["Role Guard<br/>(admin / user)"]
+        STREAM["SSE Evaluation Stream"]
+        STATE["Evaluation-Scoped State API"]
+        HOLD["Hold Controller<br/>(global + per-station)"]
+        USAGE["Cost Ledger"]
+        PDF["Scorecard Generator<br/>(explicit, paid)"]
+    end
+
+    subgraph External["External"]
+        IDP["Existing Identity Gateway"]
+        LLM["LLM Streaming API"]
+    end
+
+    subgraph Store["Document Store"]
+        EV[("Evaluations<br/>rubric + hold state")]
+        PODS[("Team Results<br/>scores + attempts")]
+        TR[("Transcripts")]
+        US[("Usage Totals")]
+    end
+
+    SESSION --> AUTHMW --> ROLE
+    TRACKER & BOARD & CONTROL & CONFIG --> ROLE
+    AUTHMW -.->|delegated login| IDP
+    ROLE --> STREAM --> LLM
+    ROLE --> STATE & HOLD & USAGE & PDF
+    STREAM -->|token counts| USAGE
+    PDF --> LLM
+    STATE <--> EV & PODS
+    STREAM -->|free capture at verdict| TR
+    PDF <--> TR
+    USAGE <--> US
